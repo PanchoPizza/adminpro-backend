@@ -1,104 +1,35 @@
-//Ruta api/docentes
-const Router = require('express');
-const conString = require('../database/config');
-const sql = require('mssql');
+const { Router } = require('express');
+const { check } = require('express-validator');
+const { addDocente, getDocente, getDocentes, updateDocente, deleteDocente } = require('../bml/controllers/docentes');
+
+const { validarCampos } = require('../bml/middlewares/validar-campos');
+const { validarJWT } = require('../bml/middlewares/validar-jwt');
+
+
 
 const router = Router();
-router.get('/', (req, res) => {
-    sql.on('error', err => {
-        console.log(err);
-        res.json(err);
-    });
-    sql.connect(conString).then(pool => {
-        return pool.request()
-            .execute('stp_docentes_getall');
-    }).then(result => {
-        res.json(result.recordset);
-    }).catch(err => {
-        res.json(err);
-    });
-});
-//get by id
-router.get('/:id', (req, res) => {
-    sql.on('error', err => {
-        console.log(err);
-        res.json(err);
-    });
-    sql.connect(conString).then(pool => {
-        return pool.request()
-            .input('idDocente', sql.Int, req.params.id)
-            .execute('stp_docentes_getbyid');
-    }).then(result => {
-        res.json(result.recordset[0]);
-    }).catch(err => {
-        res.json(err);
-    });
-});
 
-//add
-router.post('/', (req, res) => {
-    sql.on('error', err => {
-        console.log(err);
-        res.json(err);
-    });
-    sql.connect(conString).then(pool => {
-        return pool.request()
-            .input('nombre', req.body.nombre)
-            .input('edad', req.body.edad)
-            .input('titulo', req.body.titulo)
-            .input('tipo', req.body.tipo)
-            .execute('stp_docente_add');
-    }).then(result => {
-        res.status(201).json({
-            status: "OK",
-            msg: "Docente agregado correctamente"
-        });
-    }).catch(err => {
-        res.json(err);
-    });
-});
+router.get('/', validarJWT, getDocentes);
+router.get('/:id', validarJWT, getDocente);
+router.post('/', [
 
-//put
-router.put('/:id', (req, res) => {
-    sql.on('error', err => {
-        console.log(err);
-        res.json(err);
-    });
-    sql.connect(conString).then(pool => {
-        return pool.request()
-            .input('idDocente', sql.Int, req.params.id)
-            .input('nombre', req.body.nombre)
-            .input('edad', req.body.edad)
-            .input('titulo', req.body.titulo)
-            .input('tipo', req.body.tipo)
-            .execute('stp_docentes_update');
-    }).then(result => {
-        res.status(200).json({
-            status: "OK",
-            msg: "Docente actualizado correctamente"
-        });
-    }).catch(err => {
-        res.json(err);
-    });
-});
-//delete
-router.delete('/:id', (req, res) => {
-    sql.on('error', err => {
-        console.log(err);
-        res.json(err);
-    });
-    sql.connect(conString).then(pool => {
-        return pool.request()
-            .input('idDocente', sql.Int, req.params.id)
-            .execute('stp_docente_delete');
-    }).then(result => {
-        res.status(200).json({
-            status: "OK",
-            msg: "Docente eliminado correctamente"
-        });
-    }).catch(err => {
-        res.json(err);
-    });
-});
+        check('nombre', 'El nombre es requerido').not().isEmpty(),
+        check('edad', 'edad es requerido').not().isEmpty(),
+        check('titulo', 'titulo es requerido').not().isEmpty(),
+        check('tipo', 'tipo es requerido').not().isEmpty(),
+        validarCampos,
+    ],
+    addDocente);
+
+router.put('/:id', [
+        validarJWT,
+        check('nombre', 'El nombre es requerido').not().isEmpty(),
+        check('edad', 'edad es requerido').not().isEmpty(),
+        check('titulo', 'titulo es requerido').not().isEmpty(),
+        check('tipo', 'tipo es requerido').not().isEmpty(),
+        validarCampos,
+    ],
+    updateDocente);
+router.delete('/:id', validarJWT, deleteDocente);
 
 module.exports = router;
